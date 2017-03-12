@@ -16,7 +16,7 @@ func readFile(path: String) -> Array<String> {
     
 }
  
- let lines = readFile(path: "/Users/oleg/Desktop/input.txt")
+let stringToArray = readFile(path: "/Users/oleg/Desktop/input.txt")
  
  
 
@@ -57,7 +57,7 @@ let stringA = "sin 0.12 +23.3*((2+3)/cos35.5)"
 var array = stringToArray(str: stringA)
 var smallArray = [String]()
 
-// работа со скобками
+// ----- Работа со скобками
  
 var array = ["(", "2", "+", "3", ")", "*", "4"]
 var resultArray = [String]()
@@ -89,6 +89,8 @@ print(resultArray)
 
 */
 
+// ----- Объявление возможных операций
+
 enum Operations {
     case Constants(Double, Int)
     case UnaryOperations(((Double) -> Double), Int)
@@ -102,41 +104,66 @@ let operationsWhithPrecedency : [String: Operations] = [
     "cos" : Operations.UnaryOperations(cos, 3),
     "√" : Operations.UnaryOperations(sqrt, 2),
     "^" : Operations.BinaryOperations({pow($0, $1)}, 2),
-    "×" : Operations.BinaryOperations({$0 * $1}, 1),
-    "÷" : Operations.BinaryOperations({$0 / $1}, 1),
-    "＋" : Operations.BinaryOperations({$0 + $1}, 0),
-    "−" : Operations.BinaryOperations({$0 - $1}, 0)
+    "*" : Operations.BinaryOperations({$0 * $1}, 1),
+    "/" : Operations.BinaryOperations({$0 / $1}, 1),
+    "+" : Operations.BinaryOperations({$0 + $1}, 0),
+    "-" : Operations.BinaryOperations({$0 - $1}, 0)
 ]
 
-var accumulator = 3.14159265358979
+
+var arrayOne = ["cos", "π", "+", "9", "-", "4", "^", "2"]
 
 
-func performOperation (symbol: String) {
-    if let operation = operationsWhithPrecedency[symbol] {
-        switch operation {
-        case .Constants(let value, _):
-            accumulator = value
-        case .UnaryOperations(let function, _):
-            accumulator = function(accumulator)
-        /*case .BinaryOperations(let (text, function)):
-            executePendingBinaryOperation()
-            pending = PendingBinaryOperation(binaryFunction: function, firstOperand: accumulator)
-        default: break
+// ----- Расчет массива с учетом приоритета операций
+
+func mathArray (array: inout Array<String>) -> String {
+    
+    for i in 0...4 {
+        
+        let precedency = 4 - i
+        var forDelete = [Int]() // это будет массив номеров значений, которые нужно удалить перед следующей итерацией
+        
+        for j in 0..<array.count {
+            
+            if let operation = operationsWhithPrecedency[array[j]] {
+                switch operation {
+                case .Constants(let value, precedency):
+                    array[j] = String(value)
+                case .UnaryOperations(let function, precedency):
+                    if let value = Double(array[j+1]) {
+                        array[j+1] = String(function(value))
+                        forDelete.append(j)
+                    } else {return "Ошибка расчета"}
+                case .BinaryOperations(let function, precedency):
+                    if let firstValue = Double(array[j-1]), let secondValue = Double(array[j+1]) {
+                        array[j+1] = String(function(firstValue, secondValue))
+                        forDelete.append(j)
+                        forDelete.append(j-1)
+                    } else {return "Ошибка расчета"}
+                default: break
+                }
+            }
+
         }
         
+        // удаляем уже просчитаные элементы массива
+        for i in forDelete.sorted(by: {$0 > $1}) {  // сортируем для того, что бы не попытаться удалить элемент под номером, которого уже нет в массиве
+            array.remove(at: i)
+        }
+        forDelete.removeAll()
+        
     }
+
+    return array.count == 1 ? array[0] : "Ошибка расчета"
     
 }
 
 
-var array = ["cos", "3,14", "+", "9", "-", "2", "*", "3"]
-
-performOperation(symbol: "cos")
-print(accumulator)
 
 
 
-
+var result = mathArray(array: &arrayOne)
+print(result)
 
 
 
