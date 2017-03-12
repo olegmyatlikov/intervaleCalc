@@ -1,7 +1,7 @@
 import Foundation
 
-/*
- // ----- Чтение файла и запись содержимого в массив строк
+
+// ----- Чтение файла и запись содержимого в массив строк
  
 func readFile(path: String) -> Array<String> {
     
@@ -10,21 +10,59 @@ func readFile(path: String) -> Array<String> {
         let lines: [String] =  NSString(string: contents).components(separatedBy: .newlines)    // строку contents записываем в массив строк разделяя \n
         return lines
     } catch {
-        print("Файл \(path) не найден или у вас недостаточно прав для его чтения.");
+        print("Файл \(path) не найден или у вас недостаточно прав для его чтения!");
         return [String]()
     }
     
 }
  
-let stringToArray = readFile(path: "/Users/oleg/Desktop/input.txt")
+//let stringToArray = readFile(path: "/Users/oleg/Desktop/IntervaleCalc/input.txt")
+
+
+// ----- Запись в файла результатов вычислений
+
+func writeResultInFile(path: String, result: String) {
+
+    do {
+        try result.write(toFile: path, atomically: true, encoding: String.Encoding.utf8)
+    } catch {
+        print("Не достаточно прав для создания (записи) файла!");
+    }
+
+}
+
+//writeResultInFile(path: "/Users/oleg2/Desktop/IntervaleCalc/output.txt", result: "Hello, world")
  
- 
+
+// ----- Объявление возможных операций c приоритетами
+
+enum Operations {
+    case Brackets(Int)
+    case Constants(Double, Int)
+    case UnaryOperations(((Double) -> Double), Int)
+    case BinaryOperations(((Double, Double) -> Double), Int)
+}
+
+let operationsWhithPrecedency : [String: Operations] = [
+    "(" : Operations.Brackets(5),
+    ")" : Operations.Brackets(5),
+    "π" : Operations.Constants(M_PI, 4),
+    "e" : Operations.Constants(M_E, 4),
+    "sin" : Operations.UnaryOperations(sin, 3),
+    "cos" : Operations.UnaryOperations(cos, 3),
+    "√" : Operations.UnaryOperations(sqrt, 2),
+    "^" : Operations.BinaryOperations({pow($0, $1)}, 2),
+    "*" : Operations.BinaryOperations({$0 * $1}, 1),
+    "/" : Operations.BinaryOperations({$0 / $1}, 1),
+    "+" : Operations.BinaryOperations({$0 + $1}, 0),
+    "-" : Operations.BinaryOperations({$0 - $1}, 0)
+]
+
 
 // ----- Преобразование строки математического выражения в массив для дальнейшего парсинга (потому что swift плохо работает со строками)
 
 func stringToArray (str: String) -> [String] {
     
-    let operations: Set = ["+", "-", "*", "/", "^", "(", ")", "sin", "cos", "tg"]
     var resultArray = [String]()
     var middleOfNumber = false
     
@@ -32,10 +70,10 @@ func stringToArray (str: String) -> [String] {
         
         switch (String(i), middleOfNumber) {
         case (" ", _): middleOfNumber = false   // игнорируем все пробелы
-        case (let i, _) where operations.contains(i):   // если оператор (+ - / * ^)
+        case (let i, _) where (operationsWhithPrecedency.index(forKey: i) != nil):   // если оператор (+ - / * ^)
             resultArray.append(String(i))
             middleOfNumber = false
-        case (_, true) where operations.contains(resultArray[resultArray.endIndex - 1]):    // (если sin cos tg)
+        case (_, true) where (operationsWhithPrecedency.index(forKey: resultArray[resultArray.endIndex - 1]) != nil):    // (если предыдуещее значение - sin cos tg)
             resultArray.append(String(i))
             middleOfNumber = true
         case (_, true):     // если цифра еще не закончена
@@ -50,70 +88,18 @@ func stringToArray (str: String) -> [String] {
     return resultArray
 }
 
-
-
 let stringA = "sin 0.12 +23.3*((2+3)/cos35.5)"
 
 var array = stringToArray(str: stringA)
 var smallArray = [String]()
 
-// ----- Работа со скобками
+
+
+// var arrayOne = ["cos", "π", "+", "9", "-", "4", "^", "2"] ТЕСТ МАССИВ - УДАЛИТЬ
+
+
+
  
-var array = ["(", "2", "+", "3", ")", "*", "4"]
-var resultArray = [String]()
-
-var bracket = (start: 0, end: 0)
-var result = 0
-
-for i in 0..<array.count {
-    
-    resultArray.append(array[i])
-    
-    if array[i] == "(" {
-        bracket.start = i
-        resultArray = []
-    }
-    
-    if array[i] == ")" {
-        bracket.end = i
-        resultArray.removeLast()
-        break
-    }
-    
-}
-
-//array.remove(at: bracket.start)
-//array.remove(at: bracket.end)
-
-print(resultArray)
-
-*/
-
-// ----- Объявление возможных операций
-
-enum Operations {
-    case Constants(Double, Int)
-    case UnaryOperations(((Double) -> Double), Int)
-    case BinaryOperations(((Double, Double) -> Double), Int)
-}
-
-let operationsWhithPrecedency : [String: Operations] = [
-    "π" : Operations.Constants(M_PI, 4),
-    "e" : Operations.Constants(M_PI, 4),
-    "sin" : Operations.UnaryOperations(sin, 3),
-    "cos" : Operations.UnaryOperations(cos, 3),
-    "√" : Operations.UnaryOperations(sqrt, 2),
-    "^" : Operations.BinaryOperations({pow($0, $1)}, 2),
-    "*" : Operations.BinaryOperations({$0 * $1}, 1),
-    "/" : Operations.BinaryOperations({$0 / $1}, 1),
-    "+" : Operations.BinaryOperations({$0 + $1}, 0),
-    "-" : Operations.BinaryOperations({$0 - $1}, 0)
-]
-
-
-var arrayOne = ["cos", "π", "+", "9", "-", "4", "^", "2"]
-
-
 // ----- Расчет массива с учетом приоритета операций
 
 func mathArray (array: inout Array<String>) -> String {
@@ -158,12 +144,47 @@ func mathArray (array: inout Array<String>) -> String {
     
 }
 
+//var result = mathArray(array: &arrayOne)
+//print(result)
 
 
 
 
-var result = mathArray(array: &arrayOne)
-print(result)
+
+
+// ----- Алгаритм избавления от скобок - записываем в масив выражения в скобках -> считаем -> возвращаем в массив резульат -> опять ищем скобки -> и т.д.
+
+//var arrayTest3 = ["(", "2", "+", "3", ")", "*", "4"]
+var resultArray = [String]()
+
+var bracket = (start: 0, end: 0)
+var result = 0
+
+for i in 0..<array.count {
+    
+    resultArray.append(array[i])
+    
+    if array[i] == "(" {
+        bracket.start = i
+        resultArray = []
+    }
+    
+    if array[i] == ")" {
+        bracket.end = i
+        resultArray.removeLast()
+        break
+    }
+    
+}
+
+print(resultArray)
+array.insert(mathArray(array: &resultArray), at: bracket.end + 1)
+array.removeSubrange(bracket.start...bracket.end)
+print(array)
+//array.remove(at: bracket.start)
+//array.remove(at: bracket.end)
+
+
 
 
 
