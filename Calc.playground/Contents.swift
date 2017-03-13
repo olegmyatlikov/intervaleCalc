@@ -2,7 +2,7 @@ import Foundation
 
 
 // ----- Чтение файла и запись содержимого в массив строк
- 
+
 func readFile(path: String) -> Array<String> {
     
     do {
@@ -15,41 +15,42 @@ func readFile(path: String) -> Array<String> {
     }
     
 }
- 
-//let stringToArray = readFile(path: "/Users/oleg/Desktop/IntervaleCalc/input.txt")
+
+var arrayOfStringInput = readFile(path: "/Users/oleg/Desktop/IntervaleCalc/input.txt")
 
 
 // ----- Запись в файла результатов вычислений
 
 func writeResultInFile(path: String, result: String) {
-
+    
     do {
         try result.write(toFile: path, atomically: true, encoding: String.Encoding.utf8)
+        print("Запись в файл \(path) прошла успешно")
     } catch {
         print("Не достаточно прав для создания (записи) файла!");
     }
-
+    
 }
 
 //writeResultInFile(path: "/Users/oleg2/Desktop/IntervaleCalc/output.txt", result: "Hello, world")
- 
+
 
 // ----- Объявление возможных операций c приоритетами
 
 enum Operations {
-    case Brackets(Int)
+    case Brackets
     case Constants(Double, Int)
     case UnaryOperations(((Double) -> Double), Int)
     case BinaryOperations(((Double, Double) -> Double), Int)
 }
 
 let operationsWhithPrecedency : [String: Operations] = [
-    "(" : Operations.Brackets(5),
-    ")" : Operations.Brackets(5),
+    "(" : Operations.Brackets,
+    ")" : Operations.Brackets,
     "π" : Operations.Constants(M_PI, 4),
     "e" : Operations.Constants(M_E, 4),
-    "sin" : Operations.UnaryOperations(sin, 3),
-    "cos" : Operations.UnaryOperations(cos, 3),
+    "sin" : Operations.UnaryOperations({sin($0 * M_PI/180)}, 3), // умножаю на ПИ и делю на 180, чтобы считать в градусах
+    "cos" : Operations.UnaryOperations({cos($0 * M_PI/180)}, 3),
     "√" : Operations.UnaryOperations(sqrt, 2),
     "^" : Operations.BinaryOperations({pow($0, $1)}, 2),
     "*" : Operations.BinaryOperations({$0 * $1}, 1),
@@ -73,7 +74,7 @@ func stringToArray (str: String) -> [String] {
         case (let i, _) where (operationsWhithPrecedency.index(forKey: i) != nil):   // если оператор (+ - / * ^)
             resultArray.append(String(i))
             middleOfNumber = false
-        case (_, true) where (operationsWhithPrecedency.index(forKey: resultArray[resultArray.endIndex - 1]) != nil):    // (если предыдуещее значение - sin cos tg)
+        case (_, true) where (operationsWhithPrecedency.index(forKey: resultArray[resultArray.endIndex - 1]) != nil):    // (если предыдуещее значение - sin или cos)
             resultArray.append(String(i))
             middleOfNumber = true
         case (_, true):     // если цифра еще не закончена
@@ -88,101 +89,140 @@ func stringToArray (str: String) -> [String] {
     return resultArray
 }
 
-let stringA = "sin 0.12 +23.3*((2+3)/cos35.5)"
 
-var array = stringToArray(str: stringA)
-var smallArray = [String]()
+// ----- Алгаритм избавления от скобок - записываем в масив выражения в скобках -> считаем -> возвращаем в массив резульат -> опять ищем скобки -> и т.д.
+
+func openBrackets (array: Array<String>) -> (arrayWhithoutBrackets: Array<String>, noBreaketsInArray: Bool) {
+    
+    var resultArray = [String]()
+    var bracket = (start: 0, end: 0)
+    var result = ""
+    
+    
+    for i in 0..<array.count {
+        
+        resultArray.append(array[i])
+        
+        if array[i] == "(" {
+            bracket.start = i
+            resultArray = []
+        }
+        if array[i] == ")" {
+            bracket.end = i
+            resultArray.removeLast()
+            break
+        }
+        
+    }
+    
+    
+    if bracket.end == 0 {
+        return (resultArray, false)
+    } else {
+        result = mathArrayWhithPrecedency(array: resultArray)
+        resultArray = array
+        resultArray[bracket.start...bracket.end] = [result]
+    }
+    
+    
+    return (resultArray, true)
+    
+}
 
 
-
-// var arrayOne = ["cos", "π", "+", "9", "-", "4", "^", "2"] ТЕСТ МАССИВ - УДАЛИТЬ
-
-
-
- 
 // ----- Расчет массива с учетом приоритета операций
 
-func mathArray (array: inout Array<String>) -> String {
+func mathArrayWhithPrecedency (array: Array<String>) -> String {
+    
+    var clacArray = array
     
     for i in 0...4 {
         
         let precedency = 4 - i
         var forDelete = [Int]() // это будет массив номеров значений, которые нужно удалить перед следующей итерацией
         
-        for j in 0..<array.count {
+        stop: for j in 0..<clacArray.count {
             
-            if let operation = operationsWhithPrecedency[array[j]] {
+            if let operation = operationsWhithPrecedency[clacArray[j]] {
                 switch operation {
+                /*case .Brackets(precedency):
+                    repeat {
+                        array = openAllBrackets(array: array).0
+                    } while openAllBrackets(array: array).noBreaketsInArray
+                    break stop*/
                 case .Constants(let value, precedency):
-                    array[j] = String(value)
+                    clacArray[j] = String(value)
                 case .UnaryOperations(let function, precedency):
-                    if let value = Double(array[j+1]) {
-                        array[j+1] = String(function(value))
+                    if let value = Double(clacArray[j+1]) {
+                        clacArray[j+1] = String(function(value))
                         forDelete.append(j)
                     } else {return "Ошибка расчета"}
                 case .BinaryOperations(let function, precedency):
-                    if let firstValue = Double(array[j-1]), let secondValue = Double(array[j+1]) {
-                        array[j+1] = String(function(firstValue, secondValue))
+                    if let firstValue = Double(clacArray[j-1]), let secondValue = Double(clacArray[j+1]) {
+                        clacArray[j+1] = String(function(firstValue, secondValue))
                         forDelete.append(j)
                         forDelete.append(j-1)
                     } else {return "Ошибка расчета"}
                 default: break
                 }
             }
-
+            
         }
         
         // удаляем уже просчитаные элементы массива
         for i in forDelete.sorted(by: {$0 > $1}) {  // сортируем для того, что бы не попытаться удалить элемент под номером, которого уже нет в массиве
-            array.remove(at: i)
+            clacArray.remove(at: i)
         }
         forDelete.removeAll()
         
     }
-
-    return array.count == 1 ? array[0] : "Ошибка расчета"
+    
+    return clacArray.count == 1 ? clacArray[0] : "Ошибка расчета"
     
 }
 
-//var result = mathArray(array: &arrayOne)
-//print(result)
+// Основной рассчет 
 
-
-
-
-
-
-// ----- Алгаритм избавления от скобок - записываем в масив выражения в скобках -> считаем -> возвращаем в массив резульат -> опять ищем скобки -> и т.д.
-
-//var arrayTest3 = ["(", "2", "+", "3", ")", "*", "4"]
-var resultArray = [String]()
-
-var bracket = (start: 0, end: 0)
-var result = 0
-
-for i in 0..<array.count {
+func math (array: inout Array<String>) {
     
-    resultArray.append(array[i])
+    var stringForOutputFile = ""
     
-    if array[i] == "(" {
-        bracket.start = i
-        resultArray = []
+    for i in array {
+        
+        repeat {
+            array = openBrackets(array: stringToArray(str: i)).arrayWhithoutBrackets
+        } while openBrackets(array: array).noBreaketsInArray
+        
+        stringForOutputFile = stringForOutputFile + "\(i) = \(mathArrayWhithPrecedency(array: array)) \n"
+        
     }
     
-    if array[i] == ")" {
-        bracket.end = i
-        resultArray.removeLast()
-        break
-    }
+    writeResultInFile(path: "/Users/oleg/Desktop/IntervaleCalc/output.txt", result: stringForOutputFile)
     
+
 }
 
-print(resultArray)
-array.insert(mathArray(array: &resultArray), at: bracket.end + 1)
-array.removeSubrange(bracket.start...bracket.end)
-print(array)
-//array.remove(at: bracket.start)
-//array.remove(at: bracket.end)
+
+
+
+//let stringA = "sin(30) + 5- (3 + 5 / 2)-23.3*((2+3)/cos60)"
+//var array = stringToArray(str: stringA)
+math(array: &arrayOfStringInput)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
