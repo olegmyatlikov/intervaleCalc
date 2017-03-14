@@ -16,7 +16,7 @@ func readFile(path: String) -> Array<String> {
     
 }
 
-var arrayOfStringInput = readFile(path: "/Users/oleg/Desktop/IntervaleCalc/input.txt")
+var arrayOfStringInput = readFile(path: "/Users/imac501/Desktop/IntervaleCalc/input.txt")
 
 
 // ----- Запись в файла результатов вычислений
@@ -92,41 +92,44 @@ func stringToArray (str: String) -> [String] {
 
 // ----- Алгаритм избавления от скобок - записываем в масив выражения в скобках -> считаем -> возвращаем в массив резульат -> опять ищем скобки -> и т.д.
 
-func openBrackets (array: Array<String>) -> (arrayWhithoutBrackets: Array<String>, noBreaketsInArray: Bool) {
+func openBrackets (array: Array<String>) -> Array<String> {
     
-    var resultArray = [String]()
-    var bracket = (start: 0, end: 0)
-    var result = ""
+    var resultArray = array
+    var accumArray = [String]()
+    var arrayHaveBrackets: Bool
+    var bracketPosition = (start: 0, end: 0)
     
-    
-    for i in 0..<array.count {
+    repeat {
         
-        resultArray.append(array[i])
+        arrayHaveBrackets = false
         
-        if array[i] == "(" {
-            bracket.start = i
-            resultArray = []
+        search: for i in 0..<resultArray.count {
+            
+            switch resultArray[i] {
+            case "(":
+                arrayHaveBrackets = true
+                bracketPosition.start = i
+                accumArray = []
+            case ")":
+                bracketPosition.end = i
+                accumArray.removeFirst()
+                break search
+            default:
+                break
+            }
+            
+            if arrayHaveBrackets { accumArray.append(resultArray[i]) }
+            
         }
-        if array[i] == ")" {
-            bracket.end = i
-            resultArray.removeLast()
-            break
+        
+        if arrayHaveBrackets {
+            if bracketPosition.end < bracketPosition.start { return ["Не верно расставлены скобки!"]}
+            resultArray[bracketPosition.start...bracketPosition.end] = [mathArrayWhithPrecedency(array: accumArray)]
         }
         
-    }
+    } while arrayHaveBrackets
     
-    
-    if bracket.end == 0 {
-        return (resultArray, false)
-    } else {
-        result = mathArrayWhithPrecedency(array: resultArray)
-        resultArray = array
-        resultArray[bracket.start...bracket.end] = [result]
-    }
-    
-    
-    return (resultArray, true)
-    
+    return resultArray
 }
 
 
@@ -134,32 +137,29 @@ func openBrackets (array: Array<String>) -> (arrayWhithoutBrackets: Array<String
 
 func mathArrayWhithPrecedency (array: Array<String>) -> String {
     
-    var clacArray = array
+    var calcArray = array
     
     for i in 0...4 {
         
         let precedency = 4 - i
         var forDelete = [Int]() // это будет массив номеров значений, которые нужно удалить перед следующей итерацией
         
-        stop: for j in 0..<clacArray.count {
+        stop: for j in 0..<calcArray.count {
             
-            if let operation = operationsWhithPrecedency[clacArray[j]] {
+            if let operation = operationsWhithPrecedency[calcArray[j]] {
                 switch operation {
-                /*case .Brackets(precedency):
-                    repeat {
-                        array = openAllBrackets(array: array).0
-                    } while openAllBrackets(array: array).noBreaketsInArray
-                    break stop*/
                 case .Constants(let value, precedency):
-                    clacArray[j] = String(value)
+                    calcArray[j] = String(value)
                 case .UnaryOperations(let function, precedency):
-                    if let value = Double(clacArray[j+1]) {
-                        clacArray[j+1] = String(function(value))
+                    //if j+1 <= calcArray.count { return "Ошибка расчета" }
+                    if let value = Double(calcArray[j+1]) {
+                        calcArray[j+1] = String(function(value))
                         forDelete.append(j)
                     } else {return "Ошибка расчета"}
                 case .BinaryOperations(let function, precedency):
-                    if let firstValue = Double(clacArray[j-1]), let secondValue = Double(clacArray[j+1]) {
-                        clacArray[j+1] = String(function(firstValue, secondValue))
+                    //if (calcArray.count < 1) || (j+1 <= calcArray.count) { return "Ошибка расчета" }
+                    if let firstValue = Double(calcArray[j-1]), let secondValue = Double(calcArray[j+1]) {
+                        calcArray[j+1] = String(function(firstValue, secondValue))
                         forDelete.append(j)
                         forDelete.append(j-1)
                     } else {return "Ошибка расчета"}
@@ -171,17 +171,17 @@ func mathArrayWhithPrecedency (array: Array<String>) -> String {
         
         // удаляем уже просчитаные элементы массива
         for i in forDelete.sorted(by: {$0 > $1}) {  // сортируем для того, что бы не попытаться удалить элемент под номером, которого уже нет в массиве
-            clacArray.remove(at: i)
+            calcArray.remove(at: i)
         }
         forDelete.removeAll()
         
     }
     
-    return clacArray.count == 1 ? clacArray[0] : "Ошибка расчета"
+    return calcArray.count == 1 ? calcArray[0] : "Ошибка расчета"
     
 }
 
-// Основной рассчет 
+// Основной рассчет
 
 func math (array: inout Array<String>) {
     
@@ -189,24 +189,17 @@ func math (array: inout Array<String>) {
     
     for i in array {
         
-        repeat {
-            array = openBrackets(array: stringToArray(str: i)).arrayWhithoutBrackets
-        } while openBrackets(array: array).noBreaketsInArray
-        
+        array = openBrackets(array: stringToArray(str: i))
         stringForOutputFile = stringForOutputFile + "\(i) = \(mathArrayWhithPrecedency(array: array)) \n"
         
     }
     
-    writeResultInFile(path: "/Users/oleg/Desktop/IntervaleCalc/output.txt", result: stringForOutputFile)
+    writeResultInFile(path: "/Users/imac501/Desktop/IntervaleCalc/output.txt", result: stringForOutputFile)
     
-
+    
 }
 
 
-
-
-//let stringA = "sin(30) + 5- (3 + 5 / 2)-23.3*((2+3)/cos60)"
-//var array = stringToArray(str: stringA)
 math(array: &arrayOfStringInput)
 
 
