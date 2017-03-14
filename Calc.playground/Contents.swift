@@ -16,7 +16,7 @@ func readFile(path: String) -> Array<String> {
     
 }
 
-var arrayOfStringInput = readFile(path: "/Users/imac501/Desktop/IntervaleCalc/input.txt")
+var arrayOfStringInput = readFile(path: "/Users/oleg/Desktop/IntervaleCalc/input.txt")
 
 
 // ----- Запись в файла результатов вычислений
@@ -38,15 +38,15 @@ func writeResultInFile(path: String, result: String) {
 // ----- Объявление возможных операций c приоритетами
 
 enum Operations {
-    case Brackets
+    case Brackets(Int)
     case Constants(Double, Int)
     case UnaryOperations(((Double) -> Double), Int)
     case BinaryOperations(((Double, Double) -> Double), Int)
 }
 
 let operationsWhithPrecedency : [String: Operations] = [
-    "(" : Operations.Brackets,
-    ")" : Operations.Brackets,
+    "(" : Operations.Brackets(5),
+    ")" : Operations.Brackets(5),
     "π" : Operations.Constants(M_PI, 4),
     "e" : Operations.Constants(M_E, 4),
     "sin" : Operations.UnaryOperations({sin($0 * M_PI/180)}, 3), // умножаю на ПИ и делю на 180, чтобы считать в градусах
@@ -148,6 +148,9 @@ func mathArrayWhithPrecedency (array: Array<String>) -> String {
             
             if let operation = operationsWhithPrecedency[calcArray[j]] {
                 switch operation {
+                case .Brackets(5):
+                    calcArray = openBrackets(array: calcArray)
+                    break stop
                 case .Constants(let value, precedency):
                     calcArray[j] = String(value)
                 case .UnaryOperations(let function, precedency):
@@ -177,7 +180,14 @@ func mathArrayWhithPrecedency (array: Array<String>) -> String {
         
     }
     
-    return calcArray.count == 1 ? calcArray[0] : "Ошибка расчета"
+    //  если в массиве остался один элемент округляем и выводим его
+    if calcArray.count == 1 {
+        if let result = Double(calcArray[0]) {
+            return String(round(100000*result)/100000) // округление до 5 знаков после запятой
+        }
+    }
+    
+    return "Ошибка расчета"
     
 }
 
@@ -189,12 +199,12 @@ func math (array: inout Array<String>) {
     
     for i in array {
         
-        array = openBrackets(array: stringToArray(str: i))
+        array = stringToArray(str: i)
         stringForOutputFile = stringForOutputFile + "\(i) = \(mathArrayWhithPrecedency(array: array)) \n"
         
     }
     
-    writeResultInFile(path: "/Users/imac501/Desktop/IntervaleCalc/output.txt", result: stringForOutputFile)
+    writeResultInFile(path: "/Users/oleg/Desktop/IntervaleCalc/output.txt", result: stringForOutputFile)
     
     
 }
