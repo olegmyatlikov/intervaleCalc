@@ -3,20 +3,29 @@ import Foundation
 
 // ----- Чтение файла и запись содержимого в массив строк
 
-func readFile(path: String) -> Array<String> {
+class File {
     
-    do {
-        let contents:NSString = try NSString(contentsOfFile: path, encoding: String.Encoding.utf8.rawValue)    // пробуем записать содержимое файла в строку
-        let lines: [String] =  NSString(string: contents).components(separatedBy: .newlines)    // строку contents записываем в массив строк разделяя \n
+    var path: String
+    var content: String {
+        do {
+            return try String(contentsOfFile: path, encoding: String.Encoding.utf8)
+        } catch {
+            print("Файл \(path) не найден или у вас недостаточно прав для его чтения!");
+            return ""
+        }
+    }
+    
+    func filesContentInArray() -> Array<String> {
+        let lines = content.components(separatedBy: "\n")  // строку contents записываем в массив строк разделяя \n
+        print(lines)
         return lines
-    } catch {
-        print("Файл \(path) не найден или у вас недостаточно прав для его чтения!");
-        return [String]()
+    }
+    
+    init (path: String) {
+        self.path = path
     }
     
 }
-
-var arrayOfStringInput = readFile(path: "/Users/oleg/Desktop/IntervaleCalc/input.txt")
 
 
 // ----- Запись в файла результатов вычислений
@@ -204,13 +213,16 @@ func math (array: inout Array<String>) {
         
     }
     
-    writeResultInFile(path: "/Users/oleg/Desktop/IntervaleCalc/output.txt", result: stringForOutputFile)
+    writeResultInFile(path: "/Users/imac501/Desktop/IntervaleCalc/output.txt", result: stringForOutputFile)
     
     
 }
 
 
-math(array: &arrayOfStringInput)
+//math(array: &arrayOfStringInput)
+let file1 = File(path: "/Users/imac501/Desktop/IntervaleCalc/input.txt")
+file1.content
+file1.filesContentInArray()
 
 
 
