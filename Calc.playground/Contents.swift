@@ -105,7 +105,7 @@ class CalculatorBrains {
     }
     
     
-    // ----- Алгаритм избавления от скобок - записываем в масив выражения в скобках -> считаем -> возвращаем в массив резульат -> опять ищем скобки -> и т.д.
+    // ----- Алгаритм избавления от скобок - записываем в масив выражения в скобках -> считаем -> возвращаем в массив резульат -> опять ищем скобки -> пока не избавимся от всех скобок
     
     private func openBrackets (array: Array<String>) -> Array<String> {
         
@@ -154,9 +154,9 @@ class CalculatorBrains {
         
         var calcArray = array
         
-        for i in 0...4 { // ?5
+        for i in 0...5 { // ?5
             
-            let precedency = 4 - i
+            let precedency = 5 - i
             var forDelete = [Int]() // это будет массив номеров позиций, которые мы уже посчитали
             
             stop: for j in 0..<calcArray.count {
@@ -211,7 +211,9 @@ class CalculatorBrains {
             result = mathArrayWhithPrecedency(array: taskArray)
             
             switch result {
-            case "inf", "-inf", "nan":
+            case "inf", "-inf":
+                result = "На ноль делить нельзя"
+            case "nan":
                 result = "Нарушены правила математики"
             case _ where Double(result) != nil:
                 let number = Double(result)!
@@ -267,17 +269,6 @@ let arrayOfFiles = [file1, file2, file3]
 
 
 
-
-
-/*var calculator = CalculatorBrains()
- calculator.math(task: "1+4")
- calculator.result*/
-
-
-//math(array: &arrayOfStringInput)
-//let file1 = File(path: "/Users/oleg/Desktop/IntervaleCalc/input.txt") "/Users/oleg/Desktop/input.txt")
-//file1.content
-//file1.filesContentInArray()
 
 
 
