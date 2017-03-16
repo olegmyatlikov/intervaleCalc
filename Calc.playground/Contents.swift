@@ -166,24 +166,37 @@ class CalculatorBrains {
                 
                 if let operation = operationsWhithPrecedency[calcArray[j]] {
                     switch operation {
+                    /*case _ where calcArray[j] == "-" && j-1 < 0 && Double(calcArray[j+1]) != nil:
+                        calcArray[j] = String(0 - Double(calcArray[j+1])!)
+                        forDelete.append(j+1)
+                        break stop*/
                     case .Brackets(5):
                         calcArray = openBrackets(array: calcArray)
                         break stop
                     case .Constants(let value, precedency):
                         calcArray[j] = String(value)
                     case .UnaryOperations(let function, precedency):
-                        //if j+1 <= calcArray.count { return "Ошибка расчета" }
+                        if j+1 > (calcArray.count-1) { return "Ошибка расчета" } // если не будет операнда, что б не крашилось приложение
                         if let value = Double(calcArray[j+1]) {
                             calcArray[j] = String(function(value))
                             forDelete.append(j+1)
                         } else {return "Ошибка расчета"}
                     case .BinaryOperations(let function, precedency):
-                        //if (calcArray.count < 1) || (j+1 <= calcArray.count) { return "Ошибка расчета" }
-                        if let firstValue = Double(calcArray[j-1]), let secondValue = Double(calcArray[j+1]) {
-                            calcArray[j-1] = String(function(firstValue, secondValue))
+                        if j+1 > (calcArray.count-1) || Double(calcArray[j+1]) == nil  { // если нет второго операнда или не является числом
+                            return "Ошибка расчета"
+                        }
+                        if j-1 < 0 || Double(calcArray[j-1]) == nil {
+                            if calcArray[j] == "-" || calcArray[j] == "+" { // если первого операнда нет, но оператор минус или плюс
+                                calcArray[j] = String(function(0.0, Double(calcArray[j+1])!))
+                                forDelete.append(j+1)
+                            } else { return "Ошибка расчета" }  // если нет первого операнда или не является числом
+                        } else {
+                            let firstValue = Double(calcArray[j-1]), secondValue = Double(calcArray[j+1])
+                            calcArray[j-1] = String(function(firstValue!, secondValue!))
                             forDelete.append(j)
                             forDelete.append(j+1)
-                        } else {return "Ошибка расчета"}
+                        }
+                        
                     default: break
                     }
                 }
@@ -214,10 +227,8 @@ class CalculatorBrains {
             result = mathArrayWhithPrecedency(array: taskArray)
             
             switch result {
-            case "inf", "-inf":
-                result = "На ноль делить нельзя"
-            case "nan":
-                result = "Нарушены правила математики"
+            case "inf", "-inf", "nan":
+                result = "Ошибка расчета"
             case _ where Double(result) != nil:
                 let number = Double(result)!
                 // Не знаю, как округление красивее записать. Работает, как надо, но выглядит награмажденно
@@ -269,8 +280,6 @@ let arrayOfFiles = [file1, file2, file3]
     answer.writeInFile(path: "/Users/imac501/Desktop/IntervaleCalc/output_\(filesNumber).txt")
     
  }
-
-
 
 
 
