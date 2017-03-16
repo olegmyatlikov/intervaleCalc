@@ -156,10 +156,13 @@ class CalculatorBrains {
         
         for i in 0...5 { // ?5
             
+            var j = 0
             let precedency = 5 - i
             var forDelete = [Int]() // это будет массив номеров позиций, которые мы уже посчитали
             
-            stop: for j in 0..<calcArray.count {
+            stop: for value in 0..<calcArray.count {
+                
+                j = (calcArray.count - 1)  - value // делаю правую ассоциативность, т.е. выражение будет считать справа налево (это для того, чтобы правильно считать степень в степени)
                 
                 if let operation = operationsWhithPrecedency[calcArray[j]] {
                     switch operation {
@@ -171,15 +174,15 @@ class CalculatorBrains {
                     case .UnaryOperations(let function, precedency):
                         //if j+1 <= calcArray.count { return "Ошибка расчета" }
                         if let value = Double(calcArray[j+1]) {
-                            calcArray[j+1] = String(function(value))
-                            forDelete.append(j)
+                            calcArray[j] = String(function(value))
+                            forDelete.append(j+1)
                         } else {return "Ошибка расчета"}
                     case .BinaryOperations(let function, precedency):
                         //if (calcArray.count < 1) || (j+1 <= calcArray.count) { return "Ошибка расчета" }
                         if let firstValue = Double(calcArray[j-1]), let secondValue = Double(calcArray[j+1]) {
-                            calcArray[j+1] = String(function(firstValue, secondValue))
+                            calcArray[j-1] = String(function(firstValue, secondValue))
                             forDelete.append(j)
-                            forDelete.append(j-1)
+                            forDelete.append(j+1)
                         } else {return "Ошибка расчета"}
                     default: break
                     }
@@ -240,9 +243,9 @@ class CalculatorBrains {
 
 var answer = ""
  
-let file1 = File(path: "/Users/oleg/Desktop/IntervaleCalc/input_1.txt")
-let file2 = File(path: "/Users/oleg/Desktop/IntervaleCalc/input_2.txt")
-let file3 = File(path: "/Users/oleg/Desktop/IntervaleCalc/input_3.txt")
+let file1 = File(path: "/Users/imac501/Desktop/IntervaleCalc/input_1.txt")
+let file2 = File(path: "/Users/imac501/Desktop/IntervaleCalc/input_2.txt")
+let file3 = File(path: "/Users/imac501/Desktop/IntervaleCalc/input_3.txt")
 
  
 let calculator = CalculatorBrains()
@@ -263,7 +266,7 @@ let arrayOfFiles = [file1, file2, file3]
         answer = answer + calculator.taskWithResult
     }
 
-    answer.writeInFile(path: "/Users/oleg/Desktop/IntervaleCalc/output_\(filesNumber).txt")
+    answer.writeInFile(path: "/Users/imac501/Desktop/IntervaleCalc/output_\(filesNumber).txt")
     
  }
 
