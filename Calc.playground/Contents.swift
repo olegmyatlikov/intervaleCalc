@@ -127,6 +127,7 @@ class CalculatorBrains {
                     accumArray = []
                 case ")":
                     bracketPosition.end = i
+                    if accumArray.isEmpty {return ["Ошибка расчета"]} // если лишняя закрывающая скобка
                     accumArray.removeFirst()
                     break search
                 default:
@@ -166,10 +167,6 @@ class CalculatorBrains {
                 
                 if let operation = operationsWhithPrecedency[calcArray[j]] {
                     switch operation {
-                    /*case _ where calcArray[j] == "-" && j-1 < 0 && Double(calcArray[j+1]) != nil:
-                        calcArray[j] = String(0 - Double(calcArray[j+1])!)
-                        forDelete.append(j+1)
-                        break stop*/
                     case .Brackets(5):
                         calcArray = openBrackets(array: calcArray)
                         break stop
@@ -181,7 +178,7 @@ class CalculatorBrains {
                             calcArray[j] = String(function(value))
                             forDelete.append(j+1)
                         } else {return "Ошибка расчета"}
-                    case .BinaryOperations(let function, precedency):
+                    case .BinaryOperations(let function, precedency): // В этом кейсе был хот фикс, поэтому не очень красиво получилось (забыл что у минуса может не быть первого операнда...)
                         if j+1 > (calcArray.count-1) || Double(calcArray[j+1]) == nil  { // если нет второго операнда или не является числом
                             return "Ошибка расчета"
                         }
